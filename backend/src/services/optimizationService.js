@@ -6,6 +6,7 @@ const ApiError = require('../utils/ApiError');
 
 const cloneLocation = (location, originalIndex, optimizedIndex) => {
   const base = location?.toObject ? location.toObject() : { ...location };
+
   return {
     ...base,
     originalIndex,
@@ -15,8 +16,10 @@ const cloneLocation = (location, originalIndex, optimizedIndex) => {
 
 const rotateToStart = (indices, startIndex) => {
   if (!Array.isArray(indices) || indices.length === 0) return [];
+
   const pivot = indices.indexOf(startIndex);
   if (pivot <= 0) return [...indices];
+
   return [...indices.slice(pivot), ...indices.slice(0, pivot)];
 };
 
@@ -65,6 +68,7 @@ const optimizeTripRoute = async (trip, userPreferences = {}, options = {}) => {
   optimizedIndices = rotateToStart(optimizedIndices, startIndex);
 
   const includeReturnToStart = routeType === 'roundTrip';
+
   if (
     includeReturnToStart &&
     optimizedIndices.length > 0 &&
@@ -121,7 +125,9 @@ const optimizeTripRoute = async (trip, userPreferences = {}, options = {}) => {
     optimizedRouteData = safeRouteData();
   }
 
-  const fuelPrice = Number(userPreferences.fuelPrice) > 0 ? Number(userPreferences.fuelPrice) : 1.5;
+  const fuelPrice =
+    Number(userPreferences.fuelPrice) > 0 ? Number(userPreferences.fuelPrice) : 1.5;
+
   const kmPerLiter =
     Number(userPreferences.averageFuelConsumption) > 0
       ? Number(userPreferences.averageFuelConsumption)
@@ -130,7 +136,11 @@ const optimizeTripRoute = async (trip, userPreferences = {}, options = {}) => {
   const optimizedFuelCost = (optimizedRouteData.distance / kmPerLiter) * fuelPrice;
   const originalFuelCost = (originalRouteData.distance / kmPerLiter) * fuelPrice;
 
-  const optimizationSavings = Math.max(0, originalRouteData.distance - optimizedRouteData.distance);
+  const optimizationSavings = Math.max(
+    0,
+    originalRouteData.distance - optimizedRouteData.distance
+  );
+
   const timeSavings = Math.max(0, originalRouteData.duration - optimizedRouteData.duration);
 
   const uniqueOptimizedIndices =

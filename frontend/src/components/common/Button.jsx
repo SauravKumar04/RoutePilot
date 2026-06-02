@@ -6,11 +6,13 @@ const Button = ({
   variant = 'primary',
   size = 'md',
   isLoading = false,
+  disabled = false,
   className = '',
   ...props
 }) => {
-  const baseStyles = 'inline-flex items-center justify-center rounded-md font-medium transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
-  
+  const baseStyles =
+    'inline-flex items-center justify-center rounded-md font-medium transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
+
   const variants = {
     primary: 'bg-primary text-white hover:bg-primary-hover focus:ring-primary shadow-sm',
     secondary: 'bg-white text-gray-900 border border-gray-200 hover:bg-gray-50 focus:ring-gray-200 shadow-sm',
@@ -28,7 +30,7 @@ const Button = ({
     <button
       type={type}
       className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
-      disabled={isLoading || props.disabled}
+      disabled={isLoading || disabled}
       {...props}
     >
       {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}

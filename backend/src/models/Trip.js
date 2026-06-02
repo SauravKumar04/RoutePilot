@@ -1,4 +1,3 @@
-// backend/src/models/Trip.js
 const mongoose = require('mongoose');
 
 const tripSchema = new mongoose.Schema(
@@ -11,25 +10,48 @@ const tripSchema = new mongoose.Schema(
     title: {
       type: String,
       default: 'Active Route Workspace',
+      trim: true,
+    },
+    date: {
+      type: Date,
+      default: null,
+    },
+    // NEW: Added routeType field to track the selection
+    routeType: {
+      type: String,
+      enum: ['oneWay', 'roundTrip'],
+      default: 'oneWay',
     },
     locations: [
       {
-        name: String,
-        address: String,
+        name: {
+          type: String,
+          trim: true,
+        },
+        address: {
+          type: String,
+          trim: true,
+        },
         coordinates: {
           lat: Number,
           lng: Number,
         },
-        isStartNode: Boolean,
+        isStartNode: {
+          type: Boolean,
+          default: false,
+        },
       },
     ],
     routeGeometry: {
-      type: String, 
+      type: String,
+      default: '',
     },
     analytics: {
-      totalDistance: { type: Number, default: 0 },    // The FINAL Optimized Distance
-      originalDistance: { type: Number, default: 0 }, // NEW: The Unoptimized Distance
+      totalDistance: { type: Number, default: 0 },
+      originalDistance: { type: Number, default: 0 },
       totalDuration: { type: Number, default: 0 },
+      originalDuration: { type: Number, default: 0 },
+      timeSavings: { type: Number, default: 0 },
       estimatedFuelCost: { type: Number, default: 0 },
       originalFuelCost: { type: Number, default: 0 },
       optimizationSavings: { type: Number, default: 0 },

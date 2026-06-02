@@ -1,4 +1,3 @@
-// frontend/src/pages/Login.jsx
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -41,8 +40,6 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex flex-col justify-center py-12 px-6 sm:px-6 lg:px-8 bg-gray-50/50 font-sans animate-fade-in">
-      
-      {/* Minimal Logo / Back to home */}
       <div className="absolute top-8 left-8">
         <Link to="/" className="flex items-center space-x-2 opacity-60 hover:opacity-100 transition-opacity">
           <MapIcon className="w-4 h-4 text-gray-900" strokeWidth={2.5} />
@@ -60,7 +57,6 @@ const Login = () => {
 
         <div className="bg-white py-8 px-6 sm:px-10 border border-gray-200/80 rounded-2xl shadow-sm">
           <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
-            
             {authError && (
               <div className="p-3 text-[13px] font-medium text-red-700 bg-red-50 border border-red-100 rounded-xl">
                 {authError}

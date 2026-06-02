@@ -3,10 +3,6 @@ const generateToken = require('../utils/generateToken');
 const ApiError = require('../utils/ApiError');
 const ApiResponse = require('../utils/ApiResponse');
 
-/**
- * @desc    Register a new user
- * @route   POST /api/v1/auth/register
- */
 const register = async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
@@ -23,22 +19,16 @@ const register = async (req, res, next) => {
     const user = await User.create({ name, email, password });
     const token = generateToken(user._id);
 
-    // Explicitly strip password before sending response
     user.password = undefined;
 
     return res.status(201).json(
       new ApiResponse(201, { user, token }, 'User registered successfully')
     );
   } catch (error) {
-    // If next is a valid function injected by Express, this forwards to errorMiddleware smoothly
-    next(error); 
+    next(error);
   }
 };
 
-/**
- * @desc    Authenticate user & get token
- * @route   POST /api/v1/auth/login
- */
 const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
@@ -63,25 +53,20 @@ const login = async (req, res, next) => {
   }
 };
 
-
-// backend/src/controllers/authController.js
-
 const updatePreferences = async (req, res, next) => {
   try {
-    // 🚨 FAILSAFE: Catch the missing middleware before it crashes the server
     if (!req.user) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Authentication failed: missing protect middleware on this route.' 
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication failed: missing protect middleware on this route.',
       });
     }
 
-    const User = require('../models/User'); 
     const userId = req.user._id || req.user.id;
 
     const updatedUser = await User.findByIdAndUpdate(
       userId,
-      { $set: { preferences: req.body } }, 
+      { $set: { preferences: req.body } },
       { new: true, runValidators: true }
     ).select('-password');
 
@@ -89,14 +74,15 @@ const updatePreferences = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    res.status(200).json({ 
-      success: true, 
+    return res.status(200).json({
+      success: true,
       data: updatedUser,
-      message: 'Preferences updated successfully' 
+      message: 'Preferences updated successfully',
     });
-  } catch (error) { 
-    console.error("Settings Save Error:", error.message);
-    next(error); 
+  } catch (error) {
+    console.error('Settings Save Error:', error.message);
+    next(error);
   }
 };
-module.exports = { register, login,updatePreferences };
+
+module.exports = { register, login, updatePreferences };

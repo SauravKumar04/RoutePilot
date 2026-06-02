@@ -81,7 +81,7 @@ const getAnalyticsSummary = async (req, res, next) => {
         ? stats.originalFuelCost - stats.estimatedFuelCost
         : (stats.optimizationSavings / 15) * 1.5;
 
-    res.status(200).json(
+    return res.status(200).json(
       new ApiResponse(
         200,
         {

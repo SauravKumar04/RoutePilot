@@ -1,10 +1,3 @@
-/**
- * Generates an initial fast route using the Nearest Neighbor algorithm.
- * O(n^2) complexity, provides a good starting point for 2-Opt.
- * @param {Array<Array<Number>>} matrix - Distance matrix
- * @param {Number} startIndex - Index of the starting location
- * @returns {Array<Number>} Array of location indices in visited order
- */
 const nearestNeighbor = (matrix, startIndex = 0) => {
   const n = matrix.length;
   if (n === 0) return [];

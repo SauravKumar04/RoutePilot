@@ -20,19 +20,18 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Password is required'],
       minlength: 8,
-      select: false, // Prevents password from being returned in queries by default
+      select: false,
     },
     preferences: {
       currency: { type: String, default: 'USD' },
       distanceUnit: { type: String, enum: ['km', 'mi'], default: 'km' },
-      averageFuelConsumption: { type: Number, default: 15 }, // km per liter
-      fuelPrice: { type: Number, default: 1.5 }, // per liter
+      averageFuelConsumption: { type: Number, default: 15 },
+      fuelPrice: { type: Number, default: 1.5 },
     },
   },
   { timestamps: true }
 );
 
-// Pre-save hook to hash password
 userSchema.pre('save', async function () {
   if (!this.isModified('password')) return;
 
@@ -40,9 +39,8 @@ userSchema.pre('save', async function () {
   this.password = await bcrypt.hash(this.password, salt);
 });
 
-// Method to check password validity
 userSchema.methods.comparePassword = async function (candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
+  return bcrypt.compare(candidatePassword, this.password);
 };
 
 module.exports = mongoose.model('User', userSchema);

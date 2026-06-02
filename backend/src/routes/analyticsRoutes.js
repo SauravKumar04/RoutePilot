@@ -1,4 +1,3 @@
-// backend/src/routes/analyticsRoutes.js
 const express = require('express');
 const { getAnalyticsSummary } = require('../controllers/analyticsController');
 const { protect } = require('../middlewares/authMiddleware');

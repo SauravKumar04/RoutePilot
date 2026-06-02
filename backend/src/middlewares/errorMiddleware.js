@@ -1,13 +1,11 @@
-// backend/src/middlewares/errorMiddleware.js
 const ApiError = require('../utils/ApiError');
 
 const errorHandler = (err, req, res, next) => {
   let error = err;
 
-  // CRUCIAL: Always dump the actual stack trace to the terminal so developers can see it
-  console.error("\n=== BACKEND CRASH DETECTED ===");
+  console.error('\n=== BACKEND CRASH DETECTED ===');
   console.error(err.stack || err);
-  console.error("==============================\n");
+  console.error('==============================\n');
 
   if (!(error instanceof ApiError)) {
     const statusCode = error.statusCode || 500;

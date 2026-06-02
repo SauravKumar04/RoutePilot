@@ -32,7 +32,13 @@ const FuelCostChart = ({ data }) => {
             }}
           />
           <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
-          <Bar name="Fuel spent" dataKey="fuelSpent" fill="#111827" radius={[4, 4, 0, 0]} maxBarSize={40} />
+          <Bar
+            name="Fuel spent"
+            dataKey="fuelSpent"
+            fill="#111827"
+            radius={[4, 4, 0, 0]}
+            maxBarSize={40}
+          />
           <Bar
             name="Fuel saved"
             dataKey="fuelSaved"
