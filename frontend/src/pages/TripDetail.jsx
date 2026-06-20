@@ -270,7 +270,7 @@ const TripDetail = () => {
                       </p>
 
                       {/* Schedule details */}
-                      {(loc.arrivalTime || loc.departureTime) && (
+                      {enableTimeWindows && (loc.arrivalTime || loc.departureTime) && (
                         <div className="flex flex-wrap items-center gap-2 mt-2">
                           {loc.arrivalTime && (
                             <span className="inline-flex items-center text-[11px] font-medium text-gray-500">

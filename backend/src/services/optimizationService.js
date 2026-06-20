@@ -155,8 +155,10 @@ const optimizeTripRoute = async (trip, userPreferences = {}, options = {}) => {
 
   if (optimizedRouteLocations.length > 0) {
     const first = optimizedRouteLocations[0];
-    first.arrivalTime = departureTime;
-    first.departureTime = formatMinutesToTime(currentMinutes + (first.serviceTime || 0));
+    if (enableTimeWindows) {
+      first.arrivalTime = departureTime;
+      first.departureTime = formatMinutesToTime(currentMinutes + (first.serviceTime || 0));
+    }
     currentMinutes += first.serviceTime || 0;
   }
 
@@ -175,10 +177,10 @@ const optimizeTripRoute = async (trip, userPreferences = {}, options = {}) => {
         const endMin = parseTimeToMinutes(curr.timeWindowEnd);
         if (currentMinutes > endMin) curr.timeWindowViolated = true;
       }
+      curr.arrivalTime = formatMinutesToTime(currentMinutes);
+      curr.departureTime = formatMinutesToTime(currentMinutes + (curr.serviceTime || 0));
     }
 
-    curr.arrivalTime = formatMinutesToTime(currentMinutes);
-    curr.departureTime = formatMinutesToTime(currentMinutes + (curr.serviceTime || 0));
     currentMinutes += curr.serviceTime || 0;
   }
 
@@ -206,7 +208,7 @@ const optimizeTripRoute = async (trip, userPreferences = {}, options = {}) => {
     optimizedLocations = uniqueIndices.map((originalIdx, newIdx) => {
       const cloned = cloneLocation(trip.locations[originalIdx], originalIdx, newIdx);
       const match = optimizedRouteLocations.find((l) => l.originalIndex === originalIdx);
-      if (match) {
+      if (match && enableTimeWindows) {
         cloned.arrivalTime = match.arrivalTime;
         cloned.departureTime = match.departureTime;
         cloned.timeWindowViolated = match.timeWindowViolated;
