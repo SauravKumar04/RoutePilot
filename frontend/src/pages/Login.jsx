@@ -7,6 +7,7 @@ import { useMutation } from '@tanstack/react-query';
 import { Map as MapIcon, Loader2 } from 'lucide-react';
 import { loginUser } from '../api/authApi';
 import { useAuthStore } from '../store/authStore';
+import { useToastStore } from '../store/toastStore';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -17,6 +18,7 @@ const Login = () => {
   const navigate = useNavigate();
   const setCredentials = useAuthStore((state) => state.setCredentials);
   const [authError, setAuthError] = useState('');
+  const addToast = useToastStore((state) => state.addToast);
 
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: zodResolver(loginSchema),
@@ -26,10 +28,13 @@ const Login = () => {
     mutationFn: loginUser,
     onSuccess: (response) => {
       setCredentials(response.data.user, response.data.token);
+      addToast(`Welcome back, ${response.data.user.name.split(' ')[0]}!`, 'success');
       navigate('/dashboard');
     },
     onError: (error) => {
-      setAuthError(error.message || 'Authentication failed. Please check your credentials.');
+      const errMsg = error.message || 'Authentication failed. Please check your credentials.';
+      setAuthError(errMsg);
+      addToast(errMsg, 'error');
     },
   });
 

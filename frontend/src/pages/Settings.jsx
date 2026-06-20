@@ -1,221 +1,334 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
 import axiosClient from '../api/axiosClient';
-import { CheckCircle, Globe, Gauge, Coins, MapPin, Save } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useMutation } from '@tanstack/react-query';
+import { useToastStore } from '../store/toastStore';
+import { Globe, CreditCard, Fuel, Ruler, CheckCircle2, Loader2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
-const getCurrencySymbol = (currencyCode) => {
-  try {
-    return (0)
-      .toLocaleString(undefined, {
-        style: 'currency',
-        currency: currencyCode,
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-      })
-      .replace(/\d/g, '')
-      .trim();
-  } catch (e) {
-    return currencyCode;
-  }
-};
+const CURRENCIES = [
+  { code: 'USD', symbol: '$', label: 'US Dollar', region: 'United States' },
+  { code: 'INR', symbol: '₹', label: 'Indian Rupee', region: 'India' },
+  { code: 'EUR', symbol: '€', label: 'Euro', region: 'Europe' },
+  { code: 'GBP', symbol: '£', label: 'British Pound', region: 'United Kingdom' },
+];
+
+const SectionHeader = ({ icon: Icon, title, description }) => (
+  <div className="px-6 py-5 border-b border-gray-100 flex items-start gap-4">
+    <div className="w-8 h-8 rounded-lg bg-gray-50 border border-gray-200 flex items-center justify-center flex-shrink-0 mt-0.5">
+      <Icon className="w-4 h-4 text-gray-600" />
+    </div>
+    <div>
+      <h2 className="text-[14px] font-semibold text-gray-900 tracking-tight">{title}</h2>
+      {description && (
+        <p className="text-[13px] text-gray-500 mt-0.5 font-medium">{description}</p>
+      )}
+    </div>
+  </div>
+);
+
+const FieldLabel = ({ children, hint }) => (
+  <div className="mb-3">
+    <label className="block text-[13px] font-semibold text-gray-900 tracking-tight">{children}</label>
+    {hint && <p className="text-[12px] text-gray-400 mt-0.5 font-medium leading-relaxed">{hint}</p>}
+  </div>
+);
 
 const Settings = () => {
   const { user, updateUser } = useAuthStore();
-  const [isLoading, setIsLoading] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
+  const addToast = useToastStore((state) => state.addToast);
+  const [saved, setSaved] = useState(false);
 
   const [formData, setFormData] = useState({
-    currency: user?.preferences?.currency || 'USD',
-    distanceUnit: user?.preferences?.distanceUnit || 'km',
-    fuelPrice: user?.preferences?.fuelPrice || 1.5,
-    averageFuelConsumption: user?.preferences?.averageFuelConsumption || 15,
+    currency: 'USD',
+    distanceUnit: 'km',
+    fuelPrice: 1.5,
+    averageFuelConsumption: 15,
   });
 
-  const currencySymbol = getCurrencySymbol(formData.currency);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    const cleanData = {
-      ...formData,
-      fuelPrice: parseFloat(formData.fuelPrice) || 1.5,
-      averageFuelConsumption: parseFloat(formData.averageFuelConsumption) || 15,
-    };
-
-    try {
-      const res = await axiosClient.put('/auth/preferences', cleanData);
-
-      updateUser({ preferences: res.data.preferences });
-      setFormData(cleanData);
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 3000);
-    } catch (err) {
-      console.error(err);
-      alert('Failed to save settings. Check your server console for details.');
-    } finally {
-      setIsLoading(false);
+  useEffect(() => {
+    if (user?.preferences) {
+      setFormData({
+        currency: user.preferences.currency || 'USD',
+        distanceUnit: user.preferences.distanceUnit || 'km',
+        fuelPrice: user.preferences.fuelPrice || 1.5,
+        averageFuelConsumption: user.preferences.averageFuelConsumption || 15,
+      });
     }
+  }, [user]);
+
+  const mutation = useMutation({
+    mutationFn: (prefs) => axiosClient.put('/auth/preferences', prefs),
+    onSuccess: (res) => {
+      const updated = res.data?.user || res.data;
+      if (updateUser) updateUser(updated);
+      setSaved(true);
+      addToast('Configuration saved successfully', 'success');
+      setTimeout(() => setSaved(false), 2500);
+    },
+    onError: (err) => {
+      addToast(err.message || 'Failed to update preferences', 'error');
+    },
+  });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: name === 'fuelPrice' || name === 'averageFuelConsumption'
+        ? parseFloat(value) || ''
+        : value,
+    }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    mutation.mutate({
+      currency: formData.currency,
+      distanceUnit: formData.distanceUnit,
+      fuelPrice: Number(formData.fuelPrice),
+      averageFuelConsumption: Number(formData.averageFuelConsumption),
+    });
+  };
+
+  const selectedCurrency = CURRENCIES.find((c) => c.code === formData.currency) || CURRENCIES[0];
+  const isKm = formData.distanceUnit === 'km';
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: { opacity: 1, transition: { staggerChildren: 0.07 } },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 12 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.21, 0.47, 0.32, 0.98] } },
   };
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 selection:bg-gray-100 font-sans pb-32 animate-fade-in">
-      <header className="max-w-5xl mx-auto px-6 pt-12 pb-8 border-b border-gray-100">
-        <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-gray-900 mb-2">
-          System Preferences
-        </h1>
-        <p className="text-[14px] text-gray-500 font-medium">
-          Configure baseline logistics, local currencies, and global optimization constraints.
-        </p>
+    <div className="min-h-screen bg-[#FAFAFA] font-sans pb-32">
+      <header className="max-w-[760px] mx-auto px-6 pt-16 pb-10">
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+          <p className="text-[11px] font-semibold tracking-widest uppercase text-gray-400 mb-2">Account</p>
+          <h1 className="text-[28px] font-semibold tracking-tight text-gray-900 mb-1">Preferences</h1>
+          <p className="text-[14px] text-gray-500 font-medium">
+            Configure localization, vehicle logistics, and financial telemetry baselines.
+          </p>
+        </motion.div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-6 py-4">
-        <form onSubmit={handleSubmit} className="divide-y divide-gray-100">
-          <div className="py-12 grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-16">
-            <div className="md:col-span-4">
-              <div className="flex items-center mb-2">
-                <Globe className="w-4 h-4 mr-2 text-gray-900" strokeWidth={2} />
-                <h3 className="text-[15px] font-semibold text-gray-900 tracking-tight">
-                  Localization
-                </h3>
+      <main className="max-w-[760px] mx-auto px-6">
+        <form onSubmit={handleSubmit}>
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="show"
+            className="space-y-4"
+          >
+            {/* Regional */}
+            <motion.div variants={itemVariants} className="bg-white rounded-2xl border border-[#EAEAEA] overflow-hidden shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
+              <SectionHeader
+                icon={Globe}
+                title="Regional & Localization"
+                description="Currency and measurement system for all analytics output."
+              />
+              <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                  <FieldLabel hint="Used across all financial telemetry estimations.">Currency</FieldLabel>
+                  <div className="space-y-2">
+                    {CURRENCIES.map((c) => (
+                      <label
+                        key={c.code}
+                        className={`flex items-center justify-between px-4 py-3 rounded-xl border cursor-pointer transition-all duration-150 ${
+                          formData.currency === c.code
+                            ? 'bg-gray-900 border-gray-900 text-white'
+                            : 'bg-white border-[#EAEAEA] text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span
+                            className={`text-[15px] font-bold w-5 text-center ${
+                              formData.currency === c.code ? 'text-white' : 'text-gray-500'
+                            }`}
+                          >
+                            {c.symbol}
+                          </span>
+                          <div>
+                            <p className={`text-[13px] font-semibold ${formData.currency === c.code ? 'text-white' : 'text-gray-900'}`}>
+                              {c.label}
+                            </p>
+                            <p className={`text-[11px] font-medium ${formData.currency === c.code ? 'text-gray-300' : 'text-gray-400'}`}>
+                              {c.region}
+                            </p>
+                          </div>
+                        </div>
+                        <input
+                          type="radio"
+                          name="currency"
+                          value={c.code}
+                          checked={formData.currency === c.code}
+                          onChange={handleChange}
+                          className="sr-only"
+                        />
+                        {formData.currency === c.code && (
+                          <CheckCircle2 className="w-4 h-4 text-white" />
+                        )}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <FieldLabel hint="Define the unit of distance used across all matrix outputs.">
+                    Measurement System
+                  </FieldLabel>
+                  <div className="flex bg-gray-100/80 p-1 rounded-xl border border-gray-200/60">
+                    {[
+                      { value: 'km', label: 'Kilometers', sub: 'km' },
+                      { value: 'mi', label: 'Miles', sub: 'mi' },
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setFormData((p) => ({ ...p, distanceUnit: opt.value }))}
+                        className={`flex-1 py-3 flex flex-col items-center gap-0.5 text-[13px] font-semibold rounded-lg transition-all duration-200 ${
+                          formData.distanceUnit === opt.value
+                            ? 'bg-white text-gray-900 shadow-sm border border-gray-200'
+                            : 'text-gray-500 hover:text-gray-900 border border-transparent'
+                        }`}
+                      >
+                        <Ruler className="w-4 h-4" />
+                        {opt.label}
+                        <span className="text-[10px] font-medium text-gray-400">{opt.sub}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="mt-6 p-4 bg-[#FAFAFA] rounded-xl border border-[#EAEAEA]">
+                    <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-3">
+                      Preview
+                    </p>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-baseline">
+                        <span className="text-[12px] text-gray-500 font-medium">100 km</span>
+                        <span className="text-[13px] font-semibold text-gray-900">
+                          {isKm ? '100.0 km' : '62.1 mi'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-baseline">
+                        <span className="text-[12px] text-gray-500 font-medium">500 km</span>
+                        <span className="text-[13px] font-semibold text-gray-900">
+                          {isKm ? '500.0 km' : '310.7 mi'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <p className="text-[13px] text-gray-500 leading-relaxed pr-4">
-                Define the primary currency for cost calculations and the metric system
-                used for geographical distancing.
+            </motion.div>
+
+            {/* Financial */}
+            <motion.div variants={itemVariants} className="bg-white rounded-2xl border border-[#EAEAEA] overflow-hidden shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
+              <SectionHeader
+                icon={CreditCard}
+                title="Financial Logistics"
+                description="Baseline parameters used to calculate fuel cost and route expenditure."
+              />
+              <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                  <FieldLabel hint={`Average cost per liter/gallon used to calculate fuel expenditure.`}>
+                    Baseline Fuel Price
+                  </FieldLabel>
+                  <div className="relative flex items-center">
+                    <div className="absolute left-4 pointer-events-none">
+                      <span className="text-[14px] font-semibold text-gray-500">
+                        {selectedCurrency.symbol}
+                      </span>
+                    </div>
+                    <input
+                      type="number"
+                      step="0.01"
+                      name="fuelPrice"
+                      value={formData.fuelPrice}
+                      onChange={handleChange}
+                      className="w-full pl-10 pr-14 py-3 bg-white border border-[#EAEAEA] rounded-xl text-[14px] text-gray-900 font-medium focus:outline-none focus:border-gray-400 focus:ring-4 focus:ring-gray-100 shadow-sm transition-all tabular-nums"
+                    />
+                    <div className="absolute right-4 pointer-events-none">
+                      <span className="text-[12px] font-medium text-gray-400">
+                        / {isKm ? 'L' : 'Gal'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex items-center gap-2 text-[12px] text-gray-500 font-medium">
+                    <Fuel className="w-3.5 h-3.5 text-gray-400" />
+                    <span>
+                      Estimated cost per 100{isKm ? 'km' : 'mi'}:{' '}
+                      <strong className="text-gray-900">
+                        {selectedCurrency.symbol}
+                        {(
+                          (Number(formData.fuelPrice) / Number(formData.averageFuelConsumption)) *
+                          100
+                        ).toFixed(2)}
+                      </strong>
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <FieldLabel hint={`How far your vehicle travels per liter${isKm ? '' : '/gallon'}.`}>
+                    Vehicle Efficiency
+                  </FieldLabel>
+                  <div className="relative flex items-center">
+                    <input
+                      type="number"
+                      step="0.1"
+                      name="averageFuelConsumption"
+                      value={formData.averageFuelConsumption}
+                      onChange={handleChange}
+                      className="w-full pl-4 pr-20 py-3 bg-white border border-[#EAEAEA] rounded-xl text-[14px] text-gray-900 font-medium focus:outline-none focus:border-gray-400 focus:ring-4 focus:ring-gray-100 shadow-sm transition-all tabular-nums"
+                    />
+                    <div className="absolute right-4 pointer-events-none">
+                      <span className="text-[12px] font-medium text-gray-400">
+                        {isKm ? 'km / L' : 'MPG'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mt-3 p-3 bg-[#FAFAFA] rounded-xl border border-[#EAEAEA]">
+                    <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-2">
+                      Per route of 100km
+                    </p>
+                    <div className="flex justify-between">
+                      <span className="text-[12px] text-gray-500">Fuel used</span>
+                      <span className="text-[12px] font-semibold text-gray-900">
+                        {(100 / (Number(formData.averageFuelConsumption) || 1)).toFixed(1)} L
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4 pb-8">
+              <p className="text-[12px] text-gray-400 font-medium text-center sm:text-left">
+                Changes apply to all future route optimizations.
               </p>
-            </div>
-
-            <div className="md:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-8">
-              <div className="flex flex-col">
-                <label className="text-[11px] font-semibold tracking-widest uppercase text-gray-400 mb-2.5">
-                  Currency Code
-                </label>
-                <div className="relative group">
-                  <Coins className="absolute left-3.5 top-3 h-4 w-4 text-gray-400 group-focus-within:text-gray-900 transition-colors" />
-                  <input
-                    type="text"
-                    maxLength={3}
-                    value={formData.currency}
-                    onChange={(e) =>
-                      setFormData({ ...formData, currency: e.target.value.toUpperCase() })
-                    }
-                    className="w-full pl-10 pr-4 py-2.5 bg-gray-50/50 border border-gray-200/80 rounded-xl text-[13px] font-semibold text-gray-900 uppercase focus:bg-white focus:ring-4 focus:ring-gray-900/5 focus:border-gray-900 outline-none transition-all shadow-sm"
-                  />
-                </div>
-                <p className="text-[11px] text-gray-400 font-medium mt-2">
-                  Standard 3-letter ISO (e.g., USD, INR)
-                </p>
-              </div>
-
-              <div className="flex flex-col">
-                <label className="text-[11px] font-semibold tracking-widest uppercase text-gray-400 mb-2.5">
-                  Default Metric Unit
-                </label>
-                <div className="relative group">
-                  <MapPin className="absolute left-3.5 top-3 h-4 w-4 text-gray-400 group-focus-within:text-gray-900 transition-colors" />
-                  <select
-                    value={formData.distanceUnit}
-                    onChange={(e) => setFormData({ ...formData, distanceUnit: e.target.value })}
-                    className="w-full pl-10 pr-4 py-2.5 bg-gray-50/50 border border-gray-200/80 rounded-xl text-[13px] font-semibold text-gray-900 appearance-none focus:bg-white focus:ring-4 focus:ring-gray-900/5 focus:border-gray-900 outline-none transition-all shadow-sm cursor-pointer"
-                  >
-                    <option value="km">Kilometers (km)</option>
-                    <option value="mi">Miles (mi)</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="py-12 grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-16">
-            <div className="md:col-span-4">
-              <div className="flex items-center mb-2">
-                <Gauge className="w-4 h-4 mr-2 text-gray-900" strokeWidth={2} />
-                <h3 className="text-[15px] font-semibold text-gray-900 tracking-tight">
-                  Fleet Mechanics
-                </h3>
-              </div>
-              <p className="text-[13px] text-gray-500 leading-relaxed pr-4">
-                Set baseline fuel costs and average vehicle consumption. These values drive
-                the financial optimization metrics.
-              </p>
-            </div>
-
-            <div className="md:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-8">
-              <div className="flex flex-col">
-                <label className="text-[11px] font-semibold tracking-widest uppercase text-gray-400 mb-2.5">
-                  Average Fuel Price
-                </label>
-                <div className="relative flex items-center group">
-                  <span className="absolute left-4 font-semibold text-gray-400 text-[13px] group-focus-within:text-gray-900 transition-colors">
-                    {currencySymbol}
-                  </span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.fuelPrice}
-                    onChange={(e) => setFormData({ ...formData, fuelPrice: e.target.value })}
-                    className="w-full pl-8 pr-16 py-2.5 bg-gray-50/50 border border-gray-200/80 rounded-xl text-[13px] font-semibold text-gray-900 focus:bg-white focus:ring-4 focus:ring-gray-900/5 focus:border-gray-900 outline-none transition-all shadow-sm"
-                  />
-                  <span className="absolute right-4 text-[11px] font-semibold tracking-widest text-gray-400 uppercase border-l border-gray-200/80 pl-3">
-                    / Ltr
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex flex-col">
-                <label className="text-[11px] font-semibold tracking-widest uppercase text-gray-400 mb-2.5">
-                  Vehicle Efficiency
-                </label>
-                <div className="relative flex items-center group">
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={formData.averageFuelConsumption}
-                    onChange={(e) =>
-                      setFormData({ ...formData, averageFuelConsumption: e.target.value })
-                    }
-                    className="w-full pl-4 pr-20 py-2.5 bg-gray-50/50 border border-gray-200/80 rounded-xl text-[13px] font-semibold text-gray-900 focus:bg-white focus:ring-4 focus:ring-gray-900/5 focus:border-gray-900 outline-none transition-all shadow-sm"
-                  />
-                  <span className="absolute right-4 text-[11px] font-semibold tracking-widest text-gray-400 uppercase border-l border-gray-200/80 pl-3">
-                    {formData.distanceUnit} / L
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="py-8 flex flex-col sm:flex-row items-center justify-between gap-6">
-            <div className="flex-1 w-full sm:w-auto order-2 sm:order-1">
-              <AnimatePresence>
-                {showSuccess && (
-                  <motion.span
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -10 }}
-                    className="text-[13px] text-emerald-700 flex items-center font-medium bg-emerald-50 px-3.5 py-2 rounded-xl border border-emerald-100 w-max"
-                  >
-                    <CheckCircle className="w-4 h-4 mr-2 text-emerald-600" strokeWidth={2.5} />
-                    Preferences successfully synchronized
-                  </motion.span>
+              <button
+                type="submit"
+                disabled={mutation.isPending}
+                className="w-full sm:w-auto h-10 px-7 bg-black text-white text-[13px] font-semibold rounded-xl hover:bg-gray-800 transition-all shadow-[0_2px_8px_rgba(0,0,0,0.12)] active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-60 min-w-[120px]"
+              >
+                {mutation.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : saved ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    Saved
+                  </>
+                ) : (
+                  'Save Changes'
                 )}
-              </AnimatePresence>
-            </div>
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-2.5 bg-gray-900 hover:bg-gray-800 disabled:opacity-50 text-white rounded-lg text-[13px] font-medium order-1 sm:order-2 transition-colors shadow-sm"
-            >
-              {isLoading ? (
-                'Saving...'
-              ) : (
-                <>
-                  <Save className="w-4 h-4 mr-2" strokeWidth={2} /> Save Configuration
-                </>
-              )}
-            </button>
-          </div>
+              </button>
+            </motion.div>
+          </motion.div>
         </form>
       </main>
     </div>

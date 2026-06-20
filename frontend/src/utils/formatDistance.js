@@ -1,12 +1,14 @@
-export const formatDistance = (kilometers) => {
+export const formatDistance = (kilometers, unit = 'km') => {
   if (kilometers === undefined || kilometers === null || isNaN(kilometers)) {
-    return '0 km';
+    return unit === 'mi' ? '0 mi' : '0 km';
   }
-  
-  if (kilometers < 1) {
-    const meters = Math.round(kilometers * 1000);
-    return `${meters} m`;
+
+  if (unit === 'mi') {
+    const miles = kilometers * 0.621371;
+    if (miles < 1) return `${Math.round(miles * 5280)} ft`;
+    return `${miles.toFixed(1)} mi`;
   }
-  
+
+  if (kilometers < 1) return `${Math.round(kilometers * 1000)} m`;
   return `${kilometers.toFixed(1)} km`;
 };

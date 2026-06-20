@@ -10,19 +10,9 @@ const analyticsRoutes = require('./routes/analyticsRoutes');
 
 const app = express();
 
-const allowedOrigins = ['http://localhost:5173', 'http://127.0.0.1:5173'];
-
 app.use(
   cors({
-    origin(origin, callback) {
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
-        return callback(null, true);
-      }
-
-      return callback(new Error('Not allowed by CORS policy'));
-    },
+    origin: true,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -51,7 +41,7 @@ app.use('/api/v1/analytics', analyticsRoutes);
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'success',
-    message: 'RoutePilot AI API is running',
+    message: 'RoutePilot API is running',
   });
 });
 

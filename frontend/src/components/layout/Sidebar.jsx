@@ -1,12 +1,18 @@
 import { useState } from 'react';
-import { NavLink, Link } from 'react-router-dom';
+import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { Map as MapIcon, LayoutDashboard, Route, PieChart, Settings, LogOut, FolderOpen, X } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import ConfirmModal from '../common/ConfirmModal';
 
 const Sidebar = ({ onCloseMobileMenu }) => {
   const logout = useAuthStore((state) => state.logout);
+  const navigate = useNavigate();
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+    window.location.href = '/';
+  };
 
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
@@ -27,7 +33,7 @@ const Sidebar = ({ onCloseMobileMenu }) => {
               <MapIcon className="w-4 h-4 text-white" strokeWidth={2.5} />
             </div>
             <span className="font-semibold text-[15px] tracking-tight text-gray-900 group-hover:text-gray-600 transition-colors">
-              RoutePilot AI
+              RoutePilot
             </span>
           </Link>
           
@@ -79,9 +85,9 @@ const Sidebar = ({ onCloseMobileMenu }) => {
         <div className="p-4 shrink-0 border-t border-[#EAEAEA] bg-[#FAFAFA]">
           <button
             onClick={() => setIsLogoutModalOpen(true)}
-            className="group flex items-center w-full px-3 py-2 rounded-lg text-[13px] font-medium text-gray-500 hover:bg-white hover:text-gray-900 hover:shadow-[0_1px_3px_rgba(0,0,0,0.02)] border border-transparent hover:border-[#EAEAEA]/50 transition-all duration-200"
+            className="group flex items-center w-full px-3 py-2 rounded-lg text-[13px] font-semibold text-gray-500 hover:bg-red-50/40 hover:text-red-600 border border-transparent hover:border-red-100/20 transition-all duration-200 cursor-pointer"
           >
-            <LogOut className="w-[16px] h-[16px] mr-3 text-gray-400 group-hover:text-gray-600 transition-colors" strokeWidth={2} />
+            <LogOut className="w-[16px] h-[16px] mr-3 text-gray-400 group-hover:text-red-500 transition-colors duration-200" strokeWidth={2} />
             Sign out
           </button>
         </div>
@@ -90,7 +96,7 @@ const Sidebar = ({ onCloseMobileMenu }) => {
       <ConfirmModal
         isOpen={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}
-        onConfirm={logout}
+        onConfirm={handleLogout}
         title="Sign out of workspace"
         message="Are you sure you want to sign out? You will need to re-authenticate to access your routing matrices."
         confirmText="Sign out"

@@ -1,3 +1,4 @@
+// backend/models/Trip.js
 const mongoose = require('mongoose');
 
 const tripSchema = new mongoose.Schema(
@@ -16,7 +17,6 @@ const tripSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
-    // NEW: Added routeType field to track the selection
     routeType: {
       type: String,
       enum: ['oneWay', 'roundTrip'],
@@ -24,24 +24,38 @@ const tripSchema = new mongoose.Schema(
     },
     locations: [
       {
-        name: {
-          type: String,
-          trim: true,
-        },
-        address: {
-          type: String,
-          trim: true,
-        },
+        name: { type: String, trim: true },
+        address: { type: String, trim: true },
         coordinates: {
           lat: Number,
           lng: Number,
         },
-        isStartNode: {
-          type: Boolean,
-          default: false,
-        },
+        isStartNode: { type: Boolean, default: false },
+        serviceTime: { type: Number, default: 10 },
+        demand: { type: Number, default: 0 },
+        timeWindowStart: { type: String, default: null }, // e.g. "09:00"
+        timeWindowEnd: { type: String, default: null },   // e.g. "17:00"
+        arrivalTime: { type: String, default: null },
+        departureTime: { type: String, default: null },
+        timeWindowViolated: { type: Boolean, default: false },
       },
     ],
+    vehicleCapacity: {
+      type: Number,
+      default: 100,
+    },
+    enableCapacityConstraint: {
+      type: Boolean,
+      default: false,
+    },
+    enableTimeWindows: {
+      type: Boolean,
+      default: false,
+    },
+    departureTime: {
+      type: String,
+      default: '08:00', // e.g. "08:00"
+    },
     routeGeometry: {
       type: String,
       default: '',
@@ -62,9 +76,7 @@ const tripSchema = new mongoose.Schema(
       default: 'draft',
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 module.exports = mongoose.model('Trip', tripSchema);

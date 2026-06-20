@@ -8,12 +8,16 @@ import ConfirmModal from '../components/common/ConfirmModal';
 import { Trash2, Search, ArrowRight, Route as RouteIcon, MapPin, Repeat } from 'lucide-react';
 import { formatDistance } from '../utils/formatDistance';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useToastStore } from '../store/toastStore';
+import { useAuthStore } from '../store/authStore';
 
 const MyTrips = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [tripToDelete, setTripToDelete] = useState(null);
+  const addToast = useToastStore((state) => state.addToast);
+  const distanceUnit = useAuthStore((state) => state.user?.preferences?.distanceUnit || 'km');
 
   const { data: trips, isLoading } = useQuery({
     queryKey: ['trips'],
@@ -31,7 +35,11 @@ const MyTrips = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trips'] });
       queryClient.invalidateQueries({ queryKey: ['routeAnalytics'] });
+      addToast('Route deleted permanently', 'success');
     },
+    onError: (err) => {
+      addToast(err.message || 'Failed to delete route', 'error');
+    }
   });
 
   if (isLoading) return <Loader fullScreen={false} />;
@@ -179,7 +187,7 @@ const MyTrips = () => {
                               Distance
                             </span>
                             <span className="text-[14px] font-semibold text-gray-900">
-                              {formatDistance(trip.analytics?.totalDistance || 0)}
+                              {formatDistance(trip.analytics?.totalDistance || 0, distanceUnit)}
                             </span>
                           </div>
                           <div>

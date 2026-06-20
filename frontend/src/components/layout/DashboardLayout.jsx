@@ -29,7 +29,7 @@ const DashboardLayout = () => {
             <div className="bg-primary/10 p-1.5 rounded-lg">
               <Map className="w-5 h-5 text-primary" />
             </div>
-            <span className="font-bold text-lg tracking-tight text-gray-900">RoutePilot AI</span>
+            <span className="font-bold text-lg tracking-tight text-gray-900">RoutePilot</span>
           </div>
           <button 
             onClick={() => setIsMobileMenuOpen(true)} 

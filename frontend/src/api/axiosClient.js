@@ -27,7 +27,10 @@ axiosClient.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       useAuthStore.getState().logout();
-      window.location.href = '/login';
+      const publicPaths = ['/', '/login', '/register'];
+      if (!publicPaths.includes(window.location.pathname)) {
+        window.location.href = '/login';
+      }
     }
 
     const message =

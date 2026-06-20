@@ -5,13 +5,27 @@ const { optimizeTripRoute } = require('../services/optimizationService');
 
 const createTrip = async (req, res, next) => {
   try {
-    const { title, date, locations } = req.body;
+    const { 
+      title, 
+      date, 
+      locations,
+      routeType,
+      vehicleCapacity,
+      enableCapacityConstraint,
+      enableTimeWindows,
+      departureTime
+    } = req.body;
 
     const trip = await Trip.create({
       user: req.user._id,
       title,
       date,
       locations: locations || [],
+      routeType: routeType || 'oneWay',
+      vehicleCapacity,
+      enableCapacityConstraint,
+      enableTimeWindows,
+      departureTime,
     });
 
     return res.status(201).json(

@@ -7,6 +7,7 @@ import { useMutation } from '@tanstack/react-query';
 import { Map as MapIcon, Loader2 } from 'lucide-react';
 import { registerUser } from '../api/authApi';
 import { useAuthStore } from '../store/authStore';
+import { useToastStore } from '../store/toastStore';
 
 const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -18,6 +19,7 @@ const Register = () => {
   const navigate = useNavigate();
   const setCredentials = useAuthStore((state) => state.setCredentials);
   const [authError, setAuthError] = useState('');
+  const addToast = useToastStore((state) => state.addToast);
 
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: zodResolver(registerSchema),
@@ -27,10 +29,13 @@ const Register = () => {
     mutationFn: registerUser,
     onSuccess: (response) => {
       setCredentials(response.data.user, response.data.token);
+      addToast('Account registered successfully', 'success');
       navigate('/dashboard');
     },
     onError: (error) => {
-      setAuthError(error.message || 'Registration failed. Please try again.');
+      const errMsg = error.message || 'Registration failed. Please try again.';
+      setAuthError(errMsg);
+      addToast(errMsg, 'error');
     },
   });
 

@@ -63,24 +63,29 @@ const updatePreferences = async (req, res, next) => {
     }
 
     const userId = req.user._id || req.user.id;
+    const { currency, distanceUnit, averageFuelConsumption, fuelPrice } = req.body;
 
     const updatedUser = await User.findByIdAndUpdate(
       userId,
-      { $set: { preferences: req.body } },
+      { 
+        $set: { 
+          'preferences.currency': currency,
+          'preferences.distanceUnit': distanceUnit,
+          'preferences.averageFuelConsumption': averageFuelConsumption,
+          'preferences.fuelPrice': fuelPrice
+        } 
+      },
       { new: true, runValidators: true }
     ).select('-password');
 
     if (!updatedUser) {
-      return res.status(404).json({ success: false, message: 'User not found' });
+      throw new ApiError(404, 'User not found');
     }
 
-    return res.status(200).json({
-      success: true,
-      data: updatedUser,
-      message: 'Preferences updated successfully',
-    });
+    return res.status(200).json(
+      new ApiResponse(200, { user: updatedUser }, 'Preferences updated successfully')
+    );
   } catch (error) {
-    console.error('Settings Save Error:', error.message);
     next(error);
   }
 };

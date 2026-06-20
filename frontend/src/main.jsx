@@ -5,8 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from './App.jsx';
 import './index.css';
 
-// 1. Create the SINGLE instance of QueryClient here with your custom options.
-// 2. EXPORT it so your authStore can access it to clear the cache on logout.
+
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
