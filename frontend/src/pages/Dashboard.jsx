@@ -14,7 +14,6 @@ import {
 import { Link } from 'react-router-dom';
 import { formatDistance } from '../utils/formatDistance';
 import { formatCurrency } from '../utils/formatCurrency';
-import { motion } from 'framer-motion';
 import { fetchMyTrips } from '../api/tripApi';
 
 const Dashboard = () => {
@@ -50,7 +49,10 @@ const Dashboard = () => {
   const efficiencyPercentage =
     totalOriginal > 0 ? ((meta.totalSavedKm / totalOriginal) * 100).toFixed(1) : 0;
 
-  // Visual helper sparkline representing mock optimization progress
+  const isMi = distanceUnit === 'mi';
+  const displaySavedDistance = isMi ? meta.totalSavedKm * 0.621371 : meta.totalSavedKm;
+  const displaySavedUnit = isMi ? 'mi' : 'km';
+
   const sparklinePoints = [30, 45, 35, 60, 40, 75, meta.totalSavedKm > 0 ? 90 : 30];
 
   return (
@@ -124,9 +126,9 @@ const Dashboard = () => {
               
               <div className="flex items-baseline mt-2">
                 <span className="text-6xl sm:text-7xl font-bold tracking-tighter text-gray-900">
-                  {meta.totalSavedKm.toFixed(0)}
+                  {displaySavedDistance.toFixed(0)}
                 </span>
-                <span className="text-xl font-medium text-gray-400 ml-2 tracking-tight">km</span>
+                <span className="text-xl font-medium text-gray-400 ml-2 tracking-tight">{displaySavedUnit}</span>
               </div>
               <p className="text-[13px] text-gray-500 font-medium mt-3 max-w-[380px]">
                 Total distance eliminated from routes through optimal seed ordering and local 2-Opt search.
@@ -247,7 +249,7 @@ const Dashboard = () => {
                           </span>
                           <span className="w-1 h-1 rounded-full bg-gray-300" />
                           <span className="text-[10px] text-gray-400 font-medium">
-                            {trip.stops?.length || 0} stops
+                            {trip.locations?.length || 0} stops
                           </span>
                         </div>
                       </div>

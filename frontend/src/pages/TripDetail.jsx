@@ -9,7 +9,6 @@ import {
   Navigation, 
   Clock, 
   CheckCircle2, 
-  MapPin, 
   Zap, 
   DollarSign, 
   Compass 
@@ -123,7 +122,9 @@ const TripDetail = () => {
     if (navigator.share) {
       try {
         await navigator.share({ title: trip.title, text: `Review the optimized route plan for ${trip.title}`, url: window.location.href });
-      } catch (err) {}
+      } catch (err) {
+        console.warn('Share cancelled or not supported', err);
+      }
     } else {
       navigator.clipboard.writeText(window.location.href);
       addToast('Report link copied to clipboard!', 'success');
@@ -311,7 +312,7 @@ const TripDetail = () => {
                       {!isEnd && (
                         <div className="mt-5 mb-2 flex items-center relative">
                            <span className="inline-flex items-center text-[11px] font-semibold text-gray-500 bg-white px-2.5 py-0.5 rounded border border-[#EAEAEA] shadow-[0_1px_2px_rgba(0,0,0,0.02)] relative z-10 hover:border-gray-300 transition-colors cursor-default">
-                             {legDist.toFixed(1)} km
+                             {formatDistance(legDist, distanceUnit)}
                            </span>
                            <div className="absolute left-[-28px] top-1/2 w-5 border-t border-dashed border-gray-200 -z-10" />
                         </div>

@@ -31,11 +31,18 @@ const createCustomIcon = (number, isStart) => {
 };
 
 const MapView = ({ locations, routeGeometry }) => {
-  const decodedPath = useMemo(() => {
+  const decodedPaths = useMemo(() => {
     if (!routeGeometry) return [];
 
     try {
-      return polyline.decode(routeGeometry);
+      return routeGeometry.split(';').map((geom) => {
+        try {
+          return polyline.decode(geom);
+        } catch (e) {
+          console.error('Failed to decode subroute geometry chunk', e);
+          return [];
+        }
+      }).filter((path) => path.length > 0);
     } catch (error) {
       console.error('Failed to decode route geometry', error);
       return [];
@@ -57,9 +64,9 @@ const MapView = ({ locations, routeGeometry }) => {
           attribution='&copy; <a href="https://carto.com/">Carto</a>'
         />
 
-        {decodedPath.length > 0 && (
-          <Polyline positions={decodedPath} color="#3B82F6" weight={4} opacity={0.8} />
-        )}
+        {decodedPaths.map((path, idx) => (
+          <Polyline key={idx} positions={path} color="#3B82F6" weight={4} opacity={0.8} />
+        ))}
 
         {locations?.map((loc, idx) => (
           <Marker

@@ -1,5 +1,4 @@
-// frontend/src/pages/TripPlanner.jsx
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../api/axiosClient';
@@ -26,16 +25,7 @@ const TripPlanner = () => {
   const addToast = useToastStore((state) => state.addToast);
   const user = useAuthStore((state) => state.user);
 
-  const generateDefaultTitle = () => {
-    const today = new Date().toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-    return `Route Plan — ${today}`;
-  };
 
-  const [title, setTitle] = useState(generateDefaultTitle());
   const [locations, setLocations] = useState([]);
   const [routeType, setRouteType] = useState('oneWay');
   const [savedTrip, setSavedTrip] = useState(null);
@@ -48,15 +38,19 @@ const TripPlanner = () => {
   useEffect(() => {
     if (routerLocation.state?.tripToLoad) {
       const trip = routerLocation.state.tripToLoad;
-      setSavedTrip(trip);
-      setTitle(trip.title);
-      setLocations(trip.locations || []);
-      setRouteType(trip.routeType || 'oneWay');
-      setEnableCapacityConstraint(trip.enableCapacityConstraint || false);
-      setVehicleCapacity(trip.vehicleCapacity || user?.preferences?.vehicleCapacity || 100);
-      setEnableTimeWindows(trip.enableTimeWindows || false);
-      setDepartureTime(trip.departureTime || user?.preferences?.departureTime || '08:00');
-      setHasUnsavedChanges(false);
+      const uniqueLocs = (trip.locations || []).filter((loc, idx) => idx === 0 || !loc.isStartNode);
+      
+      setTimeout(() => {
+        setSavedTrip(trip);
+        setLocations(uniqueLocs);
+        setRouteType(trip.routeType || 'oneWay');
+        setEnableCapacityConstraint(trip.enableCapacityConstraint || false);
+        setVehicleCapacity(trip.vehicleCapacity || user?.preferences?.vehicleCapacity || 100);
+        setEnableTimeWindows(trip.enableTimeWindows || false);
+        setDepartureTime(trip.departureTime || user?.preferences?.departureTime || '08:00');
+        setHasUnsavedChanges(false);
+      }, 0);
+
       window.history.replaceState({}, document.title);
     }
   }, [routerLocation.state, user]);
@@ -87,7 +81,8 @@ const TripPlanner = () => {
     onSuccess: (res) => {
       const trip = res.data?.data || res.data;
       setSavedTrip(trip);
-      setLocations(trip.locations || []);
+      const uniqueLocs = (trip.locations || []).filter((loc, idx) => idx === 0 || !loc.isStartNode);
+      setLocations(uniqueLocs);
       setRouteType(trip.routeType || 'oneWay');
       setEnableCapacityConstraint(trip.enableCapacityConstraint || false);
       setVehicleCapacity(trip.vehicleCapacity || 100);
@@ -106,7 +101,8 @@ const TripPlanner = () => {
     onSuccess: (res) => {
       const trip = res.data?.data || res.data;
       setSavedTrip(trip);
-      setLocations(trip.locations);
+      const uniqueLocs = (trip.locations || []).filter((loc, idx) => idx === 0 || !loc.isStartNode);
+      setLocations(uniqueLocs);
       setRouteType(trip.routeType || 'oneWay');
       setEnableCapacityConstraint(trip.enableCapacityConstraint || false);
       setVehicleCapacity(trip.vehicleCapacity || 100);

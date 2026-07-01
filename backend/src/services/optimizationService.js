@@ -76,7 +76,9 @@ const getCVRPRouteData = async (locations, subRoutes, matrix) => {
       totalDistance += routeData.distance;
       totalDuration += routeData.duration;
       combinedLegs = combinedLegs.concat(routeData.legs || []);
-      if (i === 0 && routeData.geometry) primaryGeometry = routeData.geometry;
+      if (routeData.geometry) {
+        primaryGeometry = primaryGeometry ? `${primaryGeometry};${routeData.geometry}` : routeData.geometry;
+      }
     } catch {
       const subDist = computeMatrixRouteDistance(subRoutes[i], matrix);
       totalDistance += subDist;
@@ -88,7 +90,11 @@ const getCVRPRouteData = async (locations, subRoutes, matrix) => {
 };
 
 const optimizeTripRoute = async (trip, userPreferences = {}, options = {}) => {
-  if (!trip.locations || trip.locations.length < 2) {
+  const locations = (trip.locations || []).filter(
+    (loc, idx) => idx === 0 || !loc.isStartNode
+  );
+
+  if (locations.length < 2) {
     throw new ApiError(400, 'At least two locations are required for optimization');
   }
 
@@ -100,17 +106,17 @@ const optimizeTripRoute = async (trip, userPreferences = {}, options = {}) => {
   const departureTime = trip.departureTime || userPreferences.departureTime || '08:00';
 
   const startIndex =
-    trip.locations.findIndex((loc) => loc.isStartNode) !== -1
-      ? trip.locations.findIndex((loc) => loc.isStartNode)
+    locations.findIndex((loc) => loc.isStartNode) !== -1
+      ? locations.findIndex((loc) => loc.isStartNode)
       : 0;
 
-  const matrix = await generateRoutingMatrix(trip.locations, objective);
+  const matrix = await generateRoutingMatrix(locations, objective);
 
   let optimizedIndices = [];
   let subRoutes = [];
 
   if (enableCapacityConstraint) {
-    const vrpResult = solveCVRP(matrix, trip.locations, vehicleCapacity, startIndex);
+    const vrpResult = solveCVRP(matrix, locations, vehicleCapacity, startIndex);
     optimizedIndices = vrpResult.optimizedIndices;
     subRoutes = vrpResult.subRoutes;
   } else {
@@ -123,19 +129,19 @@ const optimizeTripRoute = async (trip, userPreferences = {}, options = {}) => {
     }
   }
 
-  const originalOrderBase = Array.from({ length: trip.locations.length }, (_, i) => i);
+  const originalOrderBase = Array.from({ length: locations.length }, (_, i) => i);
   const originalOrder = rotateToStart(originalOrderBase, startIndex);
   const includeReturnInOriginal = routeType === 'roundTrip' && !enableCapacityConstraint;
 
-  const originalRouteLocations = buildRouteLocations(trip.locations, originalOrder, includeReturnInOriginal);
-  const optimizedRouteLocations = buildRouteLocations(trip.locations, optimizedIndices, false);
+  const originalRouteLocations = buildRouteLocations(locations, originalOrder, includeReturnInOriginal);
+  const optimizedRouteLocations = buildRouteLocations(locations, optimizedIndices, false);
 
   let originalRouteData = null;
   let optimizedRouteData = null;
 
   if (enableCapacityConstraint) {
-    try { optimizedRouteData = await getCVRPRouteData(trip.locations, subRoutes, matrix); } catch {}
-    try { originalRouteData = await getDrivingRoute(buildRouteLocations(trip.locations, originalOrderBase, false)); } catch {}
+    try { optimizedRouteData = await getCVRPRouteData(locations, subRoutes, matrix); } catch {}
+    try { originalRouteData = await getDrivingRoute(buildRouteLocations(locations, originalOrderBase, false)); } catch {}
   } else {
     try { originalRouteData = await getDrivingRoute(originalRouteLocations); } catch {}
     try { optimizedRouteData = await getDrivingRoute(optimizedRouteLocations); } catch {}
@@ -184,7 +190,7 @@ const optimizeTripRoute = async (trip, userPreferences = {}, options = {}) => {
     currentMinutes += curr.serviceTime || 0;
   }
 
-  const totalServiceTimeSeconds = trip.locations.reduce((acc, loc, i) => {
+  const totalServiceTimeSeconds = locations.reduce((acc, loc, i) => {
     if (i === startIndex) return acc;
     return acc + (Number(loc.serviceTime) || 0) * 60;
   }, 0);
@@ -206,7 +212,7 @@ const optimizeTripRoute = async (trip, userPreferences = {}, options = {}) => {
         ? optimizedIndices.slice(0, -1)
         : optimizedIndices;
     optimizedLocations = uniqueIndices.map((originalIdx, newIdx) => {
-      const cloned = cloneLocation(trip.locations[originalIdx], originalIdx, newIdx);
+      const cloned = cloneLocation(locations[originalIdx], originalIdx, newIdx);
       const match = optimizedRouteLocations.find((l) => l.originalIndex === originalIdx);
       if (match && enableTimeWindows) {
         cloned.arrivalTime = match.arrivalTime;

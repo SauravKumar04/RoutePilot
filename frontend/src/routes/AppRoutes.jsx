@@ -13,6 +13,7 @@ import NotFound from '../pages/NotFound';
 import MyTrips from '../pages/MyTrips';
 import Settings from '../pages/Settings';
 import TripDetail from '../pages/TripDetail';
+import FAQ from '../pages/FAQ';
 
 const ProtectedRoute = ({ children }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -28,6 +29,7 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={<Landing />} />
+      <Route path="/faq" element={<FAQ />} />
       <Route
         path="/login"
         element={

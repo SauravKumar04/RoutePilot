@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 
-export const TIME_SLOTS = (() => {
+const TIME_SLOTS = (() => {
   const slots = [];
   for (let h = 0; h < 24; h++) {
     for (const m of ['00', '15', '30', '45']) {
@@ -13,7 +13,7 @@ export const TIME_SLOTS = (() => {
   return slots;
 })();
 
-export const formatTimeStr = (timeStr, fallback = 'Select') => {
+const formatTimeStr = (timeStr, fallback = 'Select') => {
   if (!timeStr) return fallback;
   const [hStr, mStr] = timeStr.split(':');
   const h = parseInt(hStr, 10);

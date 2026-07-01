@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import axiosClient from '../api/axiosClient';
 import { useMutation } from '@tanstack/react-query';
@@ -39,23 +39,12 @@ const Settings = () => {
   const addToast = useToastStore((state) => state.addToast);
   const [saved, setSaved] = useState(false);
 
-  const [formData, setFormData] = useState({
-    currency: 'USD',
-    distanceUnit: 'km',
-    fuelPrice: 1.5,
-    averageFuelConsumption: 15,
-  });
-
-  useEffect(() => {
-    if (user?.preferences) {
-      setFormData({
-        currency: user.preferences.currency || 'USD',
-        distanceUnit: user.preferences.distanceUnit || 'km',
-        fuelPrice: user.preferences.fuelPrice || 1.5,
-        averageFuelConsumption: user.preferences.averageFuelConsumption || 15,
-      });
-    }
-  }, [user]);
+  const [formData, setFormData] = useState(() => ({
+    currency: user?.preferences?.currency || 'USD',
+    distanceUnit: user?.preferences?.distanceUnit || 'km',
+    fuelPrice: user?.preferences?.fuelPrice || 1.5,
+    averageFuelConsumption: user?.preferences?.averageFuelConsumption || 15,
+  }));
 
   const mutation = useMutation({
     mutationFn: (prefs) => axiosClient.put('/auth/preferences', prefs),

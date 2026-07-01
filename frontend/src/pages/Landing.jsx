@@ -13,10 +13,13 @@ import {
   ShieldCheck,
   Zap,
   MapPin,
-  ChevronRight,
+  HelpCircle,
+  LogOut,
+  LayoutDashboard,
+  ChevronDown,
 } from 'lucide-react';
-import { motion, useInView, useScroll, useTransform } from 'framer-motion';
-import { useRef } from 'react';
+import { motion, useInView, useScroll, useTransform, AnimatePresence } from 'framer-motion';
+import { useState, useRef, useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
 
 const FEATURES = [
@@ -113,34 +116,6 @@ const STEPS = [
   },
 ];
 
-const WordReveal = ({ text, className = '', delay = 0 }) => {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: '-10%' });
-  const words = text.split(' ');
-
-  return (
-    <span ref={ref} className={`inline ${className}`}>
-      {words.map((word, i) => (
-        <span key={i} className="inline-block overflow-hidden">
-          <motion.span
-            className="inline-block"
-            initial={{ x: -48, opacity: 0 }}
-            animate={inView ? { x: 0, opacity: 1 } : {}}
-            transition={{
-              duration: 0.6,
-              delay: delay + i * 0.07,
-              ease: [0.16, 1, 0.3, 1],
-            }}
-          >
-            {word}
-          </motion.span>
-          {i < words.length - 1 && '\u00A0'}
-        </span>
-      ))}
-    </span>
-  );
-};
-
 const FeatureCard = ({ icon: Icon, title, desc, badge, span, index }) => {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: '-4%' });
@@ -201,25 +176,22 @@ const BigTextLine = ({ text, from = 'left', delay = 0, muted = false, outline = 
     offset: ['start end', 'end start'],
   });
 
-  // Calculate the horizontal movement based on scroll progress
-  // Left-to-right means moving from a negative offset (left) to a positive offset (right)
-  // Right-to-left means moving from a positive offset to a negative offset
   const x = useTransform(scrollYProgress, [0, 1], from === 'left' ? [-120, 120] : [120, -120]);
   const inView = useInView(ref, { once: true, margin: '-5%' });
 
-  let textClass = '';
+  let textClass;
   if (dark) {
     textClass = muted
       ? 'text-gray-800'
       : outline
-      ? 'text-transparent'
-      : 'text-white';
+        ? 'text-transparent'
+        : 'text-white';
   } else {
     textClass = muted
       ? 'text-gray-200'
       : outline
-      ? 'text-transparent'
-      : 'text-gray-900';
+        ? 'text-transparent'
+        : 'text-gray-900';
   }
 
   const strokeColor = dark ? 'rgba(255,255,255,0.25)' : 'rgba(17,24,39,0.25)';
@@ -236,7 +208,7 @@ const BigTextLine = ({ text, from = 'left', delay = 0, muted = false, outline = 
         <span
           className={`block font-black uppercase tracking-[-0.04em] leading-[0.85] whitespace-nowrap ${textClass}`}
           style={{
-            fontSize: 'clamp(54px, 12.5vw, 175px)',
+            fontSize: 'clamp(28px, 9.5vw, 150px)',
             WebkitTextStroke: outline ? `1.5px ${strokeColor}` : 'none',
           }}
         >
@@ -247,25 +219,60 @@ const BigTextLine = ({ text, from = 'left', delay = 0, muted = false, outline = 
   );
 };
 
-const HeroTextLine = ({ children, delay = 0, className = '' }) => {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true });
+
+const ScrollRevealWord = ({ word, index, scrollY }) => {
+  const startScroll = index * 40;
+  const endScroll = (index + 1) * 40;
+  const wordScale = useTransform(scrollY, [startScroll, endScroll], [0.97, 1]);
+  const textColor = useTransform(
+    scrollY,
+    [startScroll, endScroll],
+    ["rgba(17, 24, 39, 0)", "rgba(17, 24, 39, 1)"]
+  );
+
   return (
-    <div ref={ref} className="overflow-hidden">
-      <motion.div
-        initial={{ x: -60, opacity: 0 }}
-        animate={inView ? { x: 0, opacity: 1 } : {}}
-        transition={{ duration: 0.75, delay, ease: [0.16, 1, 0.3, 1] }}
-        className={className}
-      >
-        {children}
-      </motion.div>
-    </div>
+    <motion.span
+      style={{
+        color: textColor,
+        scale: wordScale,
+        WebkitTextStroke: "1.5px rgba(17, 24, 39, 0.85)"
+      }}
+      className="inline-block mr-4 last:mr-0 select-none"
+    >
+      {word}
+    </motion.span>
+  );
+};
+
+const ScrollRevealTitle = () => {
+  const { scrollY } = useScroll();
+  const words = ["Route", "Smarter.", "Save", "More."];
+
+  return (
+    <h1 className="text-5xl sm:text-7xl md:text-8xl font-black tracking-tighter uppercase leading-[0.9] text-gray-900 text-center flex flex-wrap justify-center max-w-4xl mx-auto mb-10 select-none">
+      {words.map((word, i) => (
+        <ScrollRevealWord key={i} word={word} index={i} scrollY={scrollY} />
+      ))}
+    </h1>
   );
 };
 
 const Landing = () => {
   const user = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const statsRef = useRef(null);
   const statsInView = useInView(statsRef, { once: true, margin: '-10%' });
   const heroRef = useRef(null);
@@ -289,23 +296,86 @@ const Landing = () => {
 
           <div className="flex items-center space-x-2 sm:space-x-5">
             {user ? (
-              <Link
-                to="/dashboard"
-                className="text-[13px] font-semibold px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors shadow-[0_2px_4px_rgba(0,0,0,0.1)] flex items-center gap-1.5"
-              >
-                Dashboard <ChevronRight className="w-3.5 h-3.5 opacity-60" />
-              </Link>
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-white hover:bg-gray-50 border border-[#EAEAEA] rounded-xl text-[13px] font-semibold text-gray-800 shadow-[0_1px_3px_rgba(0,0,0,0.02)] transition-all cursor-pointer select-none"
+                >
+                  <div className="w-5 h-5 rounded-full bg-gray-900 text-white flex items-center justify-center text-[10px] font-bold">
+                    {user.email ? user.email.slice(0, 2).toUpperCase() : 'US'}
+                  </div>
+                  <span className="max-w-[120px] truncate hidden sm:inline">
+                    {user.email || 'Account'}
+                  </span>
+                  <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                <AnimatePresence>
+                  {dropdownOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                      transition={{ duration: 0.15, ease: 'easeOut' }}
+                      className="absolute right-0 mt-2 w-48 bg-white border border-[#EAEAEA] rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.08)] py-1.5 z-50 overflow-hidden origin-top-right text-left"
+                    >
+                      <div className="px-4 py-2 border-b border-[#F4F4F5] mb-1">
+                        <p className="text-[11px] text-gray-400 font-semibold uppercase tracking-wider">Signed in as</p>
+                        <p className="text-[12px] text-gray-800 font-medium truncate mt-0.5">{user.email}</p>
+                      </div>
+
+                      <Link
+                        to="/dashboard"
+                        onClick={() => setDropdownOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+                      >
+                        <LayoutDashboard className="w-4 h-4 text-gray-400" />
+                        Dashboard
+                      </Link>
+
+                      <Link
+                        to="/faq"
+                        onClick={() => setDropdownOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+                      >
+                        <HelpCircle className="w-4 h-4 text-gray-400" />
+                        Have doubts?
+                      </Link>
+
+                      <div className="border-t border-[#F4F4F5] my-1" />
+
+                      <button
+                        onClick={() => {
+                          setDropdownOpen(false);
+                          logout();
+                        }}
+                        className="w-full flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-red-600 hover:bg-red-50 transition-colors text-left cursor-pointer border-none bg-transparent"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Log out
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             ) : (
               <>
                 <Link
+                  to="/faq"
+                  className="text-[12px] font-semibold px-2.5 py-1.5 bg-[#F4F4F5] hover:bg-gray-200 text-gray-700 hover:text-gray-900 rounded-lg transition-all flex items-center gap-1 border border-[#EAEAEA] cursor-pointer"
+                >
+                  <HelpCircle className="w-3.5 h-3.5 text-gray-400" />
+                  <span className="hidden sm:inline">Have doubt?</span>
+                </Link>
+                <Link
                   to="/login"
-                  className="text-[13px] font-medium text-gray-600 hover:text-gray-900 transition-colors hidden sm:block"
+                  className="text-[12px] font-semibold px-2.5 py-1.5 hover:bg-gray-100 text-gray-700 hover:text-gray-900 rounded-lg transition-all cursor-pointer"
                 >
                   Log in
                 </Link>
                 <Link
                   to="/register"
-                  className="text-[13px] font-semibold px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors shadow-[0_2px_4px_rgba(0,0,0,0.1)]"
+                  className="text-[12px] font-semibold px-3 py-1.5 bg-black hover:bg-gray-800 text-white rounded-lg transition-all shadow-[0_1.5px_3px_rgba(0,0,0,0.1)] cursor-pointer"
                 >
                   Sign Up
                 </Link>
@@ -327,20 +397,15 @@ const Landing = () => {
             style={{ opacity: heroOpacity, y: heroY }}
             className="max-w-[1100px] mx-auto px-5 sm:px-8 pt-28 pb-24 w-full"
           >
-            <div className="w-full">
-              <div className="mb-10 sm:mb-14 overflow-visible select-none">
-                <BigTextLine text="ROUTE" from="left" delay={0} />
-                <BigTextLine text="SMARTER." from="right" delay={0.1} outline />
-                <BigTextLine text="SAVE" from="left" delay={0.2} />
-                <BigTextLine text="MORE." from="right" delay={0.3} outline />
-              </div>
+            <div className="w-full text-center">
+              <ScrollRevealTitle />
 
-              <div className="max-w-[540px]">
+              <div className="max-w-[620px] mx-auto">
                 <motion.p
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.65, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                  className="text-[17px] sm:text-[19px] text-gray-500 mb-10 font-medium leading-relaxed"
+                  className="text-[17px] sm:text-[19px] text-gray-500 mb-10 font-medium leading-relaxed text-center"
                 >
                   Solve complex vehicle routing problems instantly — with real-time capacity limits, delivery time windows, fuel telemetry, and live map visualization.
                 </motion.p>
@@ -349,25 +414,25 @@ const Landing = () => {
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: 0.55, ease: [0.16, 1, 0.3, 1] }}
-                  className="flex flex-col sm:flex-row gap-3"
+                  className="flex flex-col sm:flex-row gap-3 justify-center"
                 >
                   {user ? (
-                    <Link to="/dashboard">
-                      <button className="h-12 px-7 bg-black text-white text-[14px] font-semibold rounded-xl hover:bg-gray-800 transition-all shadow-[0_4px_12px_rgba(0,0,0,0.15)] active:scale-[0.98] flex items-center justify-center gap-2 group w-full sm:w-auto">
+                    <Link to="/dashboard" className="w-full sm:w-auto">
+                      <button className="h-10 px-5 bg-black text-white text-[13px] font-semibold rounded-lg hover:bg-gray-800 transition-all shadow-[0_2px_8px_rgba(0,0,0,0.1)] active:scale-[0.98] flex items-center justify-center gap-1.5 group w-full cursor-pointer">
                         Open Dashboard
                         <ArrowRight className="w-4 h-4 opacity-70 group-hover:translate-x-1 transition-transform" />
                       </button>
                     </Link>
                   ) : (
                     <>
-                      <Link to="/register">
-                        <button className="h-12 px-7 bg-black text-white text-[14px] font-semibold rounded-xl hover:bg-gray-800 transition-all shadow-[0_4px_12px_rgba(0,0,0,0.15)] active:scale-[0.98] flex items-center justify-center gap-2 group w-full sm:w-auto">
+                      <Link to="/register" className="w-full sm:w-auto">
+                        <button className="h-10 px-5 bg-black text-white text-[13px] font-semibold rounded-lg hover:bg-gray-800 transition-all shadow-[0_2px_8px_rgba(0,0,0,0.1)] active:scale-[0.98] flex items-center justify-center gap-1.5 group w-full cursor-pointer">
                           Start free — no card needed
                           <ArrowRight className="w-4 h-4 opacity-70 group-hover:translate-x-1 transition-transform" />
                         </button>
                       </Link>
-                      <Link to="/login">
-                        <button className="h-12 px-7 bg-white text-gray-800 text-[14px] font-medium rounded-xl border border-[#DDDDE3] hover:border-gray-400 hover:bg-gray-50 transition-all flex items-center justify-center w-full sm:w-auto shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+                      <Link to="/login" className="w-full sm:w-auto">
+                        <button className="h-10 px-5 bg-white text-gray-800 text-[13px] font-semibold rounded-lg border border-[#DDDDE3] hover:border-gray-400 hover:bg-gray-50 transition-all flex items-center justify-center w-full shadow-[0_1px_2px_rgba(0,0,0,0.02)] cursor-pointer">
                           Sign in
                         </button>
                       </Link>
@@ -382,7 +447,7 @@ const Landing = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.8 }}
-              className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-16 sm:mt-20"
+              className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mt-16 sm:mt-20"
             >
               <span className="text-[11px] font-bold tracking-widest text-gray-300 uppercase">Powered by</span>
               {['OpenStreetMap', 'OSRM Engine', 'Leaflet.js', 'MongoDB'].map((t) => (
@@ -431,7 +496,7 @@ const Landing = () => {
         </div>
 
         {/* ── Big scroll text ── */}
-        <section className="max-w-[1100px] mx-auto px-5 sm:px-8 py-20 sm:py-28 overflow-visible">
+        <section className="max-w-[1100px] mx-auto px-5 sm:px-8 py-20 sm:py-28 overflow-hidden">
           <div className="mb-6 select-none">
             <BigTextLine text="EVERYTHING" from="left" delay={0} />
             <BigTextLine text="IN ONE ENGINE." from="right" delay={0.1} outline />
@@ -445,6 +510,7 @@ const Landing = () => {
           >
             From geocoding to financial telemetry — all features built into one high-performance interface.
           </motion.p>
+
         </section>
 
         {/* ── Features grid ── */}
@@ -457,7 +523,7 @@ const Landing = () => {
         </section>
 
         {/* ── How it works ── */}
-        <section className="bg-white border-t border-[#EAEAEA] py-20 sm:py-28 overflow-visible">
+        <section className="bg-white border-t border-[#EAEAEA] py-20 sm:py-28 overflow-hidden">
           <div className="max-w-[1100px] mx-auto px-5 sm:px-8">
             <div className="mb-12 sm:mb-16 select-none">
               <BigTextLine text="SIMPLE BY" from="left" delay={0} />
@@ -482,7 +548,7 @@ const Landing = () => {
         </section>
 
         {/* ── CTA ── */}
-        <section className="bg-gray-950 py-20 sm:py-28 overflow-visible">
+        <section className="bg-gray-950 py-20 sm:py-28 overflow-hidden">
           <div className="max-w-[1100px] mx-auto px-5 sm:px-8">
             <div className="w-full">
               <div className="mb-10 sm:mb-14 overflow-visible select-none">
@@ -510,22 +576,22 @@ const Landing = () => {
                   className="flex flex-col sm:flex-row gap-3"
                 >
                   {user ? (
-                    <Link to="/dashboard">
-                      <button className="h-12 px-7 bg-white text-gray-900 text-[14px] font-semibold rounded-xl hover:bg-gray-100 transition-all shadow-[0_4px_16px_rgba(0,0,0,0.3)] active:scale-[0.98] flex items-center gap-2 group w-full sm:w-auto justify-center">
+                    <Link to="/dashboard" className="w-full sm:w-auto">
+                      <button className="h-10 px-5 bg-white text-gray-900 text-[13px] font-semibold rounded-lg hover:bg-gray-100 transition-all shadow-[0_2px_8px_rgba(0,0,0,0.1)] active:scale-[0.98] flex items-center gap-1.5 group w-full justify-center cursor-pointer">
                         Open Dashboard
                         <ArrowRight className="w-4 h-4 opacity-60 group-hover:translate-x-1 transition-transform" />
                       </button>
                     </Link>
                   ) : (
                     <>
-                      <Link to="/register">
-                        <button className="h-12 px-7 bg-white text-gray-900 text-[14px] font-semibold rounded-xl hover:bg-gray-100 transition-all shadow-[0_4px_16px_rgba(0,0,0,0.3)] active:scale-[0.98] flex items-center gap-2 group w-full sm:w-auto justify-center">
+                      <Link to="/register" className="w-full sm:w-auto">
+                        <button className="h-10 px-5 bg-white text-gray-900 text-[13px] font-semibold rounded-lg hover:bg-gray-100 transition-all shadow-[0_2px_8px_rgba(0,0,0,0.1)] active:scale-[0.98] flex items-center gap-1.5 group w-full justify-center cursor-pointer">
                           Create free account
                           <ArrowRight className="w-4 h-4 opacity-60 group-hover:translate-x-1 transition-transform" />
                         </button>
                       </Link>
-                      <Link to="/login">
-                        <button className="h-12 px-7 bg-transparent text-gray-500 text-[14px] font-medium rounded-xl border border-gray-800 hover:border-gray-600 hover:text-gray-200 transition-all flex items-center justify-center w-full sm:w-auto">
+                      <Link to="/login" className="w-full sm:w-auto">
+                        <button className="h-10 px-5 bg-transparent text-gray-400 hover:text-gray-250 text-[13px] font-semibold rounded-lg border border-gray-800 hover:border-gray-600 transition-all flex items-center justify-center w-full cursor-pointer">
                           Sign in
                         </button>
                       </Link>
@@ -572,6 +638,9 @@ const Landing = () => {
                 </Link>
               </>
             )}
+            <Link to="/faq" className="text-[12px] font-medium text-gray-500 hover:text-gray-900 transition-colors">
+              FAQ
+            </Link>
             <div className="flex items-center gap-2 sm:pl-6 sm:border-l border-[#EAEAEA]">
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               <span className="text-[11px] font-medium text-gray-400">All systems operational</span>
